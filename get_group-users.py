@@ -1,10 +1,13 @@
+#get_group-users.py
 import requests
 from requests.auth import HTTPBasicAuth
 
 # ACCT API config
-ACCT_BASE = "https://test.acct.dk/rest/current"
-ACCT_USER = "LystSvoemSandbox_rest"
-ACCT_PASS = "NF2Vd"
+import os
+ACCT_BASE = os.getenv("ACCT_BASE", "https://test.acct.dk/rest/current")
+ACCT_USER = os.getenv("ACCT_USER", "")
+ACCT_PASS = os.getenv("ACCT_PASS", "")
+GROUP_ID  = os.getenv("GROUP_ID", "")
 
 GROUP_ID = "e9d39db7-b38f-43db-bfe1-d9a3a8f4b177"  # din gruppe
 

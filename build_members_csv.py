@@ -1,4 +1,4 @@
-# export_group_members.py
+# build_members_csv.py
 import csv
 import xml.etree.ElementTree as ET
 import requests

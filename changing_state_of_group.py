@@ -1,4 +1,4 @@
-# sync_group_from_json.py
+# changing_state_of_group.py
 import sys
 import json
 import csv
@@ -10,10 +10,11 @@ import xml.etree.ElementTree as ET
 NS_S = "http://schemas.microsoft.com/2003/10/Serialization/"
 
 # --- ACCT config ---
-ACCT_BASE = "https://test.acct.dk/rest/current"
-ACCT_USER = "LystSvoemSandbox_rest"
-ACCT_PASS = "NF2Vd"
-GROUP_ID  = "e9d39db7-b38f-43db-bfe1-d9a3a8f4b177"
+import os
+ACCT_BASE = os.getenv("ACCT_BASE", "https://test.acct.dk/rest/current")
+ACCT_USER = os.getenv("ACCT_USER", "")
+ACCT_PASS = os.getenv("ACCT_PASS", "")
+GROUP_ID  = os.getenv("GROUP_ID", "")
 
 auth = HTTPBasicAuth(ACCT_USER, ACCT_PASS)
 

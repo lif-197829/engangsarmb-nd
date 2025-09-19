@@ -1,3 +1,4 @@
+#create_missing_users.py
 import sys
 import csv
 import argparse
@@ -7,10 +8,11 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 # --- ACCT config (tilpas til dit miljø) ---
-ACCT_BASE = "https://test.acct.dk/rest/current"
-ACCT_USER = "LystSvoemSandbox_rest"
-ACCT_PASS = "NF2Vd"
-GROUP_ID  = "e9d39db7-b38f-43db-bfe1-d9a3a8f4b177"   # den gruppe nye brugere skal i
+import os
+ACCT_BASE = os.getenv("ACCT_BASE", "https://test.acct.dk/rest/current")
+ACCT_USER = os.getenv("ACCT_USER", "")
+ACCT_PASS = os.getenv("ACCT_PASS", "")
+GROUP_ID  = os.getenv("GROUP_ID", "")
 
 # namespaces
 NS_MAIN = "http://schemas.datacontract.org/2004/07/AcctPublicRestCommunicationLibrary"
