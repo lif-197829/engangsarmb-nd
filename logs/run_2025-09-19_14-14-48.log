@@ -1,0 +1,39 @@
+2025-09-19T14:14:48+02:00 INFO  === LIF / Lystrup Svømning — Daglig synk & rapport ===
+2025-09-19T14:14:48+02:00 INFO  Flag: opret_manglende=false, dry_run=false
+2025-09-19T14:14:48+02:00 INFO  Logfil: logs/run_2025-09-19_14-14-48.log
+2025-09-19T14:14:48+02:00 INFO  Miljø indlæst fra .env
+2025-09-19T14:14:48+02:00 INFO  1) Henter rasmus-liste.csv
+2025-09-19T14:14:48+02:00 INFO  KØR rasmus-liste-til_csv: rasmus-liste-til_csv.py
+ Downloaded og gemt som rasmus-liste.csv
+2025-09-19T14:14:49+02:00 INFO  OK  rasmus-liste-til_csv (forsøg 1/3, 1s)
+2025-09-19T14:14:49+02:00 INFO  2) Henter all_users.csv
+2025-09-19T14:14:49+02:00 INFO  KØR find_users: find_users.py
+ Henter alle brugere…
+• Fundet 783 brugere i /users
+ Skrev 783 rækker til all_users.csv
+2025-09-19T14:14:49+02:00 INFO  OK  find_users (forsøg 1/3, 0s)
+2025-09-19T14:14:49+02:00 INFO  3) Henter group_members.csv
+2025-09-19T14:14:49+02:00 INFO  KØR build_members_csv: build_members_csv.py
+ Henter gruppens medlemmer…
+• Fundet 8 medlemmer i gruppen
+ Skrev 8 medlemmer til group_members.csv
+2025-09-19T14:14:49+02:00 INFO  OK  build_members_csv (forsøg 1/3, 0s)
+2025-09-19T14:14:49+02:00 INFO  4) Danner diff-filer
+2025-09-19T14:14:49+02:00 INFO  KØR member_rasmus_diff: member_rasmus_diff.py
+ to_add.json:    0 GUIDs
+ to_delete.json: 0 GUIDs
+ to_update.json: 1 GUIDs (EntryRemaining=0, excl. to_delete)
+2025-09-19T14:14:49+02:00 INFO  OK  member_rasmus_diff (forsøg 1/1, 0s)
+2025-09-19T14:14:49+02:00 INFO  Optælling før oprettelse | add=0 del=0 upd=1 mangler=1
+2025-09-19T14:14:49+02:00 INFO  6) Anvender ændringer (ADD/DELETE)
+2025-09-19T14:14:49+02:00 INFO  KØR changing_state_of_group: changing_state_of_group.py to_add.json to_delete.json
+➡️  Indlæst 0 GUIDs fra to_add.json (to_add)
+➡️  Indlæst 0 GUIDs fra to_delete.json (to_delete)
+
+--- Resultat ---
+Tilføjet: 0  | Allerede i gruppen: 0  | ADD fejl: 0
+Slettet (brugere): 0  | Allerede slettet: 0 | DEL fejl: 0
+2025-09-19T14:14:50+02:00 INFO  OK  changing_state_of_group (forsøg 1/2, 1s)
+2025-09-19T14:14:50+02:00 INFO  Rapport skrevet: reports/report_2025-09-19_14-14-48.csv
+2025-09-19T14:14:50+02:00 INFO  Artefakter arkiveret i: logs
+2025-09-19T14:14:50+02:00 INFO  Færdig.

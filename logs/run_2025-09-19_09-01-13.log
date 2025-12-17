@@ -1,0 +1,65 @@
+2025-09-19T09:01:13+02:00 INFO  === LIF / Lystrup Svømning — Daglig synk & rapport ===
+2025-09-19T09:01:13+02:00 INFO  Flag: opret_manglende=true, dry_run=false
+2025-09-19T09:01:13+02:00 INFO  Logfil: logs/run_2025-09-19_09-01-13.log
+2025-09-19T09:01:13+02:00 INFO  Miljø indlæst fra .env
+2025-09-19T09:01:13+02:00 INFO  1) Henter rasmus-liste.csv
+2025-09-19T09:01:13+02:00 INFO  KØR rasmus-liste-til_csv: rasmus-liste-til_csv.py
+✅ Downloaded and saved as rasmus-liste.csv
+2025-09-19T09:01:15+02:00 INFO  OK  rasmus-liste-til_csv (forsøg 1/3, 2s)
+2025-09-19T09:01:15+02:00 INFO  2) Henter all_users.csv
+2025-09-19T09:01:15+02:00 INFO  KØR find_users: find_users.py
+🔎 Henter alle brugere…
+• Fundet 778 brugere i /users
+✅ Skrev 778 rækker til all_users.csv
+2025-09-19T09:01:15+02:00 INFO  OK  find_users (forsøg 1/3, 0s)
+2025-09-19T09:01:15+02:00 INFO  3) Henter group_members.csv
+2025-09-19T09:01:15+02:00 INFO  KØR build_members_csv: build_members_csv.py
+🔎 Henter gruppens medlemmer…
+• Fundet 3 medlemmer i gruppen
+✅ Skrev 3 medlemmer til group_members.csv
+2025-09-19T09:01:16+02:00 INFO  OK  build_members_csv (forsøg 1/3, 1s)
+2025-09-19T09:01:16+02:00 INFO  4) Danner diff-filer
+2025-09-19T09:01:16+02:00 INFO  KØR member_rasmus_diff: member_rasmus_diff.py
+✅ to_add.json:    0 GUIDs
+✅ to_delete.json: 0 GUIDs
+✅ to_update.json: 0 GUIDs (EntryRemaining=0, excl. to_delete)
+⚠️  1 Cards fra rasmus-liste fandtes ikke i all_users.csv → missing_cards.json
+2025-09-19T09:01:16+02:00 INFO  OK  member_rasmus_diff (forsøg 1/1, 0s)
+2025-09-19T09:01:16+02:00 INFO  Optælling før oprettelse | add=0 del=0 upd=0 mangler=1
+2025-09-19T09:01:16+02:00 INFO  5) Opretter manglende brugere
+2025-09-19T09:01:16+02:00 INFO  KØR create_missing_users: create_missing_users.py rasmus-liste.csv all_users.csv --card-col Card --name-col Name
+🔎 Mangler i systemet: 1 kort (oprettes som brugere)
+✅ Oprettet bruger – Card 1272441956 (Name: 1272441956)
+
+--- Resultat ---
+Oprettet: 1  | Allerede fandtes: 0  | Fejl: 0
+2025-09-19T09:01:16+02:00 INFO  OK  create_missing_users (forsøg 1/2, 0s)
+2025-09-19T09:01:16+02:00 INFO  Opfrisker lister/diff efter oprettelser
+2025-09-19T09:01:16+02:00 INFO  KØR find_users: find_users.py
+🔎 Henter alle brugere…
+• Fundet 779 brugere i /users
+✅ Skrev 779 rækker til all_users.csv
+2025-09-19T09:01:17+02:00 INFO  OK  find_users (forsøg 1/3, 1s)
+2025-09-19T09:01:17+02:00 INFO  KØR build_members_csv: build_members_csv.py
+🔎 Henter gruppens medlemmer…
+• Fundet 4 medlemmer i gruppen
+✅ Skrev 4 medlemmer til group_members.csv
+2025-09-19T09:01:17+02:00 INFO  OK  build_members_csv (forsøg 1/3, 0s)
+2025-09-19T09:01:17+02:00 INFO  KØR member_rasmus_diff: member_rasmus_diff.py
+✅ to_add.json:    0 GUIDs
+✅ to_delete.json: 0 GUIDs
+✅ to_update.json: 0 GUIDs (EntryRemaining=0, excl. to_delete)
+2025-09-19T09:01:17+02:00 INFO  OK  member_rasmus_diff (forsøg 1/1, 0s)
+2025-09-19T09:01:17+02:00 INFO  Optælling efter oprettelse | add=0 del=0 upd=0 mangler=1
+2025-09-19T09:01:17+02:00 INFO  6) Anvender ændringer (ADD/DELETE)
+2025-09-19T09:01:17+02:00 INFO  KØR changing_state_of_group: changing_state_of_group.py to_add.json to_delete.json
+➡️  Indlæst 0 GUIDs fra to_add.json (to_add)
+➡️  Indlæst 0 GUIDs fra to_delete.json (to_delete)
+
+--- Resultat ---
+Tilføjet: 0  | Allerede i gruppen: 0  | ADD fejl: 0
+Slettet (brugere): 0  | Allerede slettet: 0 | DEL fejl: 0
+2025-09-19T09:01:17+02:00 INFO  OK  changing_state_of_group (forsøg 1/2, 0s)
+2025-09-19T09:01:17+02:00 INFO  Rapport skrevet: reports/report_2025-09-19_09-01-13.csv
+2025-09-19T09:01:17+02:00 INFO  Artefakter arkiveret i: logs
+2025-09-19T09:01:17+02:00 INFO  Færdig.

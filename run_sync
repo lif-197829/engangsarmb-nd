@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Brug:
+#   ./run_sync.sh                        # normal kørsel (ingen auto-oprettelse)
+#   ./run_sync.sh --create-missing       # OGSÅ opret brugere, der mangler i systemet
+#   ./run_sync.sh --dry-run              # simulerer kun (ingen ændringer i ACCT)
+#   ./run_sync.sh --create-missing --dry-run
+#
+# Danske alias:
+#   --opret-manglende  (alias for --create-missing)
+#   --tørkørsel        (alias for --dry-run)
+
+CREATE_MISSING=false
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --create-missing|--opret-manglende) CREATE_MISSING=true ;;
+    --dry-run|--tørkørsel)              DRY_RUN=true ;;
+    *) echo "Ukendt flag: $arg" >&2; exit 2 ;;
+  esac
+done
+
+# --- Logging-opsætning ---
+ts="$(date +'%Y-%m-%d_%H-%M-%S')"
+log_dir="logs"
+report_dir="reports"
+mkdir -p "$log_dir" "$report_dir"
+LOG_FILE="$log_dir/run_$ts.log"
+
+# Spejl stdout/stderr til logfil
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+# Små log-funktioner
+log()   { printf '%s %-5s %s\n' "$(date -Iseconds)" "$1" "$2"; }
+info()  { log INFO  "$1"; }
+warn()  { log WARN  "$1"; }
+error() { log ERROR "$1"; }
+
+on_error() {
+  local exit_code=$?
+  error "Pipeline fejlede med exit code $exit_code"
+  error "Se log: $LOG_FILE"
+  exit "$exit_code"
+}
+trap on_error ERR
+
+info "=== LIF / Lystrup Svømning — Daglig synk & rapport ==="
+info "Flag: opret_manglende=${CREATE_MISSING}, dry_run=${DRY_RUN}"
+info "Logfil: ${LOG_FILE}"
+
+# 0) Miljøvariabler
+if [ -f ".env" ]; then
+  set -a; source .env; set +a
+  info "Miljø indlæst fra .env"
+else
+  warn ".env blev ikke fundet — bruger miljøvariabler fra shell"
+fi
+
+# Forudsætninger
+command -v jq >/dev/null 2>&1      || { error "jq kræves (installer fx: brew install jq)"; exit 1; }
+command -v python3 >/dev/null 2>&1 || { error "python3 kræves"; exit 1; }
+
+# Hjælper til at køre Python-scripts med timing og retries
+py_run() {
+  local label="$1"; shift
+  local retries="${1:-1}"; shift
+  local delay=2
+
+  info "KØR ${label}: $*"
+  local start=$(date +%s)
+  for attempt in $(seq 1 "$retries"); do
+    if python3 "$@"; then
+      local dur=$(( $(date +%s) - start ))
+      info "OK  ${label} (forsøg ${attempt}/${retries}, ${dur}s)"
+      return 0
+    fi
+    warn "Forsøg ${attempt}/${retries} fejlede for ${label}"
+    sleep "$delay"
+    delay=$(( delay * 2 ))
+  done
+  error "FEJL ${label} efter ${retries} forsøg"
+  return 1
+}
+
+# 1) Hent Rasmus’ liste (→ rasmus-liste.csv)
+info "1) Henter rasmus-liste.csv"
+py_run "rasmus-liste-til_csv" 3 rasmus-liste-til_csv.py
+
+# 2) Eksporter alle ACCT-brugere (→ all_users.csv)
+info "2) Henter all_users.csv"
+py_run "find_users" 3 find_users.py
+
+# 3) Eksporter gruppemedlemmer (→ group_members.csv)
+info "3) Henter group_members.csv"
+py_run "build_members_csv" 3 build_members_csv.py
+
+# 4) Beregn differenser (→ to_add.json / to_delete.json / to_update.json / missing_cards.json)
+info "4) Danner diff-filer"
+py_run "member_rasmus_diff" 1 member_rasmus_diff.py
+
+# Optæl før evt. oprettelse
+ADD_COUNT=$(jq '.to_add | length' to_add.json 2>/dev/null || echo 0)
+DEL_COUNT=$(jq '.to_delete | length' to_delete.json 2>/dev/null || echo 0)
+UPD_COUNT=$(jq '.to_update | length' to_update.json 2>/dev/null || echo 0)
+MISS_COUNT=$( [ -f missing_cards.json ] && jq 'length' missing_cards.json || echo 0 )
+
+info "Optælling før oprettelse | add=${ADD_COUNT} del=${DEL_COUNT} upd=${UPD_COUNT} mangler=${MISS_COUNT}"
+
+# 5) (Valgfrit) Opret manglende brugere og opdater lister/diff
+if $CREATE_MISSING; then
+  if [ -f "missing_cards.json" ] && [ "$(jq 'length' missing_cards.json)" -gt 0 ]; then
+    if $DRY_RUN; then
+      info "Tørkørsel: ville oprette manglende brugere (${MISS_COUNT})"
+    else 
+      info "5) Opretter manglende brugere"
+      py_run "create_missing_users" 2 create_missing_users.py rasmus-liste.csv all_users.csv --card-col "Card" --name-col "Name"
+
+      info "Opfrisker lister/diff efter oprettelser"
+      py_run "find_users" 3 find_users.py
+      py_run "build_members_csv" 3 build_members_csv.py
+      py_run "member_rasmus_diff" 1 member_rasmus_diff.py
+    fi
+
+    # Optæl igen
+    ADD_COUNT=$(jq '.to_add | length' to_add.json 2>/dev/null || echo 0)
+    DEL_COUNT=$(jq '.to_delete | length' to_delete.json 2>/dev/null || echo 0)
+    UPD_COUNT=$(jq '.to_update | length' to_update.json 2>/dev/null || echo 0)
+    MISS_COUNT=$( [ -f missing_cards.json ] && jq 'length' missing_cards.json || echo 0 )
+
+    info "Optælling efter oprettelse | add=${ADD_COUNT} del=${DEL_COUNT} upd=${UPD_COUNT} mangler=${MISS_COUNT}"
+  else
+    info "5) Ingen manglende kort at oprette (missing_cards.json mangler eller er tom)"
+  fi
+fi
+
+# 6) Udfør ændringer (ADD/DELETE/UPDATE)
+if $DRY_RUN; then
+  info "Tørkørsel: ville køre changing_state_of_group.py med to_add.json / to_delete.json / to_update.json"
+else
+  info "6) Anvender ændringer (ADD/DELETE/UPDATE)"
+  if [ -f to_update.json ] && [ "$(jq '.to_update | length' to_update.json 2>/dev/null || echo 0)" -gt 0 ]; then
+    py_run "changing_state_of_group" 2 changing_state_of_group.py to_add.json to_delete.json to_update.json
+  else
+    # Kør stadig for add/delete selv hvis der ingen updates er
+    py_run "changing_state_of_group" 2 changing_state_of_group.py to_add.json to_delete.json
+  fi
+fi
+
+# 7) Skriv rapport og arkivér artefakter
+report_csv="$report_dir/report_$ts.csv"
+{
+  echo "timestamp,adds,deleted,updates,missing_cards"
+  echo "$ts,$ADD_COUNT,$DEL_COUNT,$UPD_COUNT,$MISS_COUNT"
+} > "$report_csv"
+
+# Gem en kopi af diff-artefakter sammen med log til revision
+cp -f to_add.json        "$log_dir/to_add_$ts.json"        2>/dev/null || true
+cp -f to_delete.json     "$log_dir/to_delete_$ts.json"     2>/dev/null || true
+cp -f to_update.json     "$log_dir/to_update_$ts.json"     2>/dev/null || true
+cp -f missing_cards.json "$log_dir/missing_cards_$ts.json" 2>/dev/null || true
+cp -f all_users.csv      "$log_dir/all_users_$ts.csv"      2>/dev/null || true
+cp -f group_members.csv  "$log_dir/group_members_$ts.csv"  2>/dev/null || true
+cp -f rasmus-liste.csv   "$log_dir/rasmus-liste_$ts.csv"   2>/dev/null || true
+
+info "Rapport skrevet: $report_csv"
+info "Artefakter arkiveret i: $log_dir"
+info "Færdig."

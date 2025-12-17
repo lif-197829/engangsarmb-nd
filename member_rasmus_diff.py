@@ -1,4 +1,4 @@
-# build_diff_userids_from_group_and_all_users.py
+# member_rasmus_diff.py
 import csv
 import json
 from pathlib import Path
@@ -94,7 +94,9 @@ def main():
     to_update = sorted({
         data["UserID"]
         for c, data in group_by_card.items()
-        if data.get("EntryRemaining") == "0" and data.get("UserID") and data["UserID"] not in to_delete_set
+        if data.get("UserID")
+            and data["UserID"] not in to_delete_set
+            and (data.get("EntryRemaining") or "").strip() == "0"
     })
 
     # Write JSON outputs
@@ -102,9 +104,9 @@ def main():
     Path(DELETE_JSON).write_text(json.dumps({"to_delete": to_delete}, indent=2, ensure_ascii=False), encoding="utf-8")
     Path(UPDATE_JSON).write_text(json.dumps({"to_update": to_update}, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    print(f"✅ to_add.json:    {len(to_add)} GUIDs")
-    print(f"✅ to_delete.json: {len(to_delete)} GUIDs")
-    print(f"✅ to_update.json: {len(to_update)} GUIDs (EntryRemaining=0, excl. to_delete)")
+    print(f" to_add.json:    {len(to_add)} GUIDs")
+    print(f" to_delete.json: {len(to_delete)} GUIDs")
+    print(f" to_update.json: {len(to_update)} GUIDs (EntryRemaining=0, excl. to_delete)")
 
     # Log cards from Rasmus with no mapping in all_users.csv
     if missing:

@@ -14,3 +14,5 @@ venv/
 .vscode/
 .DS_Store
 EOF
+.venv/
+.venv/

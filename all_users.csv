@@ -1,7 +1,6 @@
 Card,Name,UserID,EntryRemaining
 2458652729,Emilie Juul Erup,012c14cc-4f70-4aea-9111-f256c5b510dd,1
 479977780,Isabella Johanne Dupont Petersen,014bf543-7364-4092-a4e7-ceaf21003ef3,1
-3430671668,Bibi Gissel,015bcdf1-167f-4bca-9d13-a5ff267a3e23,1
 2362692404,Thora Brinch Johansen,017c79f2-da1c-42d7-86b8-27171551d308,1
 1660359993,Gustav Thomsen,01e21e3f-ad10-46ba-9d2c-ba82838ca353,1
 1284165428,Inge Almvig,01e2f5df-82ad-466f-a46c-29d1df2a811a,1
@@ -15,6 +14,7 @@ Card,Name,UserID,EntryRemaining
 1547101492,Karin Mellerris Kristensen,03a6ba4f-746c-4a45-8f57-f5a48d6b4519,1
 1275451956,Malthe Rath Larsen,03a6d300-fd5a-470a-941e-c6fea3479724,1
 2997164345,Erik Lundgaard Jørgensen,0457bc12-e882-4bed-9f49-8538ef7056d2,1
+3430671432,3430671432,0460393c-15aa-4623-8918-8a6a47742cc3,1
 3974549556,Birthe lorentzen,050bbb17-6744-47d2-aa8a-afa91d5f2a3f,1
 1918967353,Rosa Brixen,052b0dca-e2a1-4bfb-a452-a0df941bde34,1
 3436629812,Kabir Ashar,052de000-6e80-4595-8f99-f06af8592987,1
@@ -240,6 +240,7 @@ Card,Name,UserID,EntryRemaining
 1815335988,Pelle Holm,4a866561-3939-4912-802d-af66ed915336,1
 477028916,Georg Roland Thomsen,4aa69d08-ce6f-4780-8dc2-ee28beefcefd,1
 2349720116,Lene Køppen,4adac469-8cba-4352-9cf5-9f9ccee70ce7,1
+1272441956,1272441956,4b7f549c-f43b-4c03-9d44-d0e952ac888c,0
 2722828857,Preben Christensen,4bf7cd86-a656-405c-b1db-36b5811d5480,1
 2992573753,Fie Mols Frank,4cb0a2d5-7271-4d46-a3bb-8fc33174568c,1
 3432109876,Victoria Castrillon-Laspia,4cc928e6-9443-4263-ad86-6504f52b46bf,1
@@ -338,6 +339,7 @@ Card,Name,UserID,EntryRemaining
 3974291764,Azadeh Hamiyativaghef,671bf9c3-92e4-4a01-b143-086d0b85097b,1
 2900878388,Aksel Jacobsen,67be46c7-400e-4fbd-b59b-9369a1a12e92,1
 848958521,Albert Mikkelsen Hindsholm,67d00d8a-38de-4493-96ce-3efe1c84eadd,1
+1272741956,1272741956,686552d7-a378-445b-bcbd-fe6d4026b883,0
 2084230708,Joanna Szlaga-Dyrda,687e4918-c70c-4076-a54e-9ec188db88c3,1
 3531610169,Laura Vyrtz Christiansen,68917cc3-eb23-4a56-aa50-512df7667ecf,1
 3454400966,Luana Jensen,68d32bb1-f8a2-48c2-b3e4-c2d0b0ad22c8,1
@@ -403,6 +405,7 @@ Card,Name,UserID,EntryRemaining
 1109070905,Gry Romme Jensen,808e6447-68d0-4143-9534-a6e10863bc6b,1
 2897926452,annette brøndum,80aec526-c27d-4f3a-8c70-63c2bb26df91,1
 586358329,Inga Skrypalle,80e997dc-c433-4192-98e8-a7e5c74c0f2e,1
+7545196215,7545196215,80fe9262-9f0b-47c6-97e7-46f1c6466ef7,1
 2359154996,Silje Filstrup Caspersen,814e1752-bfca-4947-a2aa-ad29ed235961,1
 2093928244,Bertil Langborg Vesterbæk,817460de-97a1-4782-8f39-4921d961c444,1
 3707167028,Anne Marie Andersen,818e2c4c-d383-4faa-9122-2b3e866b9e8a,1
@@ -467,11 +470,12 @@ Card,Name,UserID,EntryRemaining
 3002669881,Isabelle Duez,988da179-5eef-480a-85e2-07e05001de0d,1
 2896287540,Jonas Anker Kvisgård Lange,98ce42c0-a48d-401e-b326-2f9a22a32e3e,1
 202036532,Hannah Welling,98dcf017-13b1-4dbc-b549-0d4a9446c670,1
-2096290100,Adam Damsgaard,997d8baa-e7ff-4387-af4a-50eadb1893bf,0
+2096290100,Adam Damsgaard,997d8baa-e7ff-4387-af4a-50eadb1893bf,3
 1646271801,Christian Winther,99fbcc84-7598-4c50-8912-24ed40ac3d4e,1
 202368308,Magnus Evald,9a01d836-4f8a-484b-8424-993b6451da8d,1
 473486644,Charlotte kousted,9a165d05-cfce-451c-8632-e99be19bd76a,1
 1922239289,Rose Elsgaard,9b6ebae7-47bc-48d5-882a-f8000896ee73,1
+98000245,Smoke Test,9c02d227-28c8-4d5a-9ecd-d91a5e9a59cc,1
 1648956217,Asbjørn Pascall Christensen,9c435616-eb69-49a3-80fa-99d62bef8d29,1
 3538488377,Johanne Ammitzbøll,9c502d45-fb89-4f6d-811f-95105e93b64b,1
 1276567860,Jeppe Stoltze Bergnæs,9c53217b-a6c5-4551-94df-82032b684b1a,1
@@ -587,6 +591,7 @@ Card,Name,UserID,EntryRemaining
 3431388212,Laura Brink Andersen,c2b19f4b-28ec-4f95-9aad-8277ebb42707,1
 3261074489,Charlotte Birn,c2f45ee9-f895-41f9-908f-004f6d961b8c,1
 2088228404,Emil Hosek,c33b698f-ad1e-4211-91c6-ad8be4539d79,1
+3430671668,3430671668,c3838a99-5068-4f13-9dfd-a1cbbf3be01d,1
 2191071289,Ane Gade Christensen,c3946b6d-d00b-4a01-97a6-7aefcf570c5e,1
 1288362292,Daria Shipovskov,c39631fc-5f30-4a79-b6f6-6da6c9efdbb9,1
 3256682809,Eivind Vester Dejgaard,c398f66d-95c9-4eab-a991-93786b47ebab,1
@@ -617,6 +622,7 @@ Card,Name,UserID,EntryRemaining
 49618745,Anker Hannibal Larsen,cc6b5a29-916f-4330-b184-ebdbd1d73662,1
 2632703540,Charlie Bidstrup,cd217eff-06e8-4558-ac9d-993331599311,1
 1378358329,Alma Printz Poulsen,cdc0aa4a-f947-4e88-a6a0-de8eec329fb6,1
+5619721545,5619721545,cdcea17b-95a9-45f6-95ca-4ec8fb27e2f5,1
 1376984633,Malthe Jansen Christensen,cee0bf02-b6b4-4c7d-a97a-f145387d67dc,1
 3258715449,Birk Johannes Larsen,cee26cee-50c6-4d5b-881a-a0cbded7ab99,1
 312369867,Bertram Stilling,cee7b5d3-f6eb-4f17-8050-afdc0a82959d,1
@@ -651,6 +657,7 @@ Card,Name,UserID,EntryRemaining
 2184972857,Vera Saksø,d9ef61a4-85c4-47d2-bc9b-daa249c4c6fb,1
 3154567732,Mathilde Arler,da1cae22-6837-470e-91cd-ad828566d644,1
 2350460980,Nadine Rostom,da27b31f-40a4-4094-bd51-694fa2f33e6c,1
+99356101,Smoke Test,da312e07-83b5-4f72-9f9a-6bc7e1172799,1
 4241545524,Rasmus Sellmer Gjerløv,dae22057-55b6-4eeb-9833-3151d608d88c,1
 1815335476,Anton Bruun,dae6cf5e-a1b6-4c68-8f4c-7ac7cfee8baa,1
 2184647481,Amanda Cornelia Williams Lund,db605b31-8708-4686-85cf-4320590328f6,1
@@ -692,6 +699,7 @@ Card,Name,UserID,EntryRemaining
 316874297,Viola Hansted,e95de04d-e999-479f-b743-7af3b8fd9f1e,1
 2632133940,Otto Jordan Rosgaard,e9e7556e-902e-4b0c-a387-6c07fd8cc2d8,1
 4235518516,Emma Wilson,ea8dab96-9d68-4d75-ac43-128a292c7459,1
+95368213,Smoke Test,eaba7efa-8b9f-4361-b946-25b677244e20,1
 848171065,Jette Lüthje,eaef553b-3e23-4f09-917b-e18c7efe2743,1
 4066775609,Nohr Olesen Lihn,eb4aef2f-5035-4ce5-a05b-dbc6ac05fc7f,1
 740574516,Ellen Brøgger,eb750f5f-5d6f-4c57-b85b-1539cc31fff8,1

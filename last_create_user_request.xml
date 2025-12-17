@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<UserData xmlns="http://schemas.datacontract.org/2004/07/AcctPublicRestCommunicationLibrary" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Card>95368213</Card><EntryRemaining i:nil="true" /><Groups><arr:string>e9d39db7-b38f-43db-bfe1-d9a3a8f4b177</arr:string></Groups><Name>Smoke Test</Name><UType>Normal</UType></UserData>

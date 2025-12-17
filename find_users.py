@@ -1,13 +1,15 @@
-# export_all_users.py
+# find_users.py
 import csv
 import xml.etree.ElementTree as ET
 import requests
 from requests.auth import HTTPBasicAuth
 
 # --- ACCT config ---
-ACCT_BASE = "https://test.acct.dk/rest/current"
-ACCT_USER = "LystSvoemSandbox_rest"
-ACCT_PASS = "NF2Vd"
+import os
+ACCT_BASE = os.getenv("ACCT_BASE", "https://test.acct.dk/rest/current")
+ACCT_USER = os.getenv("ACCT_USER", "")
+ACCT_PASS = os.getenv("ACCT_PASS", "")
+GROUP_ID  = os.getenv("GROUP_ID", "")
 
 OUTPUT_CSV = "all_users.csv"
 
@@ -57,7 +59,7 @@ def parse_users(xml_root: ET.Element):
     return users
 
 def main():
-    print("🔎 Henter alle brugere…")
+    print(" Henter alle brugere…")
     root = get_xml(f"{ACCT_BASE}/users")
     users = parse_users(root)
     print(f"• Fundet {len(users)} brugere i /users")
@@ -70,7 +72,7 @@ def main():
             w.writerow([u["card"], u["name"], u["guid"], u["entry_remaining"]])
             wrote += 1
 
-    print(f"✅ Skrev {wrote} rækker til {OUTPUT_CSV}")
+    print(f" Skrev {wrote} rækker til {OUTPUT_CSV}")
 
 if __name__ == "__main__":
     main()
