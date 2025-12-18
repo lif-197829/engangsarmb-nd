@@ -34,7 +34,7 @@ def get_entry_remaining(user_el: ET.Element) -> str:
         return "0"
     is_nil = er.attrib.get(f"{{{NS['i']}}}nil", "").lower() == "true"
     if is_nil:
-        return "1"
+        return "nil"  
     value = (er.text or "").strip()
     return value if value else "0"
 
