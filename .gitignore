@@ -1,4 +1,3 @@
-cat > .gitignore << 'EOF'
 # Python
 __pycache__/
 *.pyc
@@ -6,13 +5,26 @@ __pycache__/
 *.pyd
 .venv/
 venv/
+
+# Miljøvariabler (indeholder credentials)
 .env
-# data/exports
+
+# Genereret data (runtime)
 *.csv
 *.json
-# VSCode / Mac
+logs/
+reports/
+
+# Debug/test XML filer
+*.xml
+
+# Backup filer
+*.bak
+
+# IDE / OS
 .vscode/
+.idea/
 .DS_Store
-EOF
-.venv/
-.venv/
+
+# Credentials (bør aldrig committes)
+Rest.txt
