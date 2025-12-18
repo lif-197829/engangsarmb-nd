@@ -448,12 +448,12 @@ def set_entry_remaining(user_guid: str, target: str = "1") -> tuple[bool, str | 
 
         if mode != "none":
             el_entry = ET.SubElement(ud, ET.QName(NS_USERDATA, "EntryRemaining"))
-            if target == "1" and mode == "nil":
-                el_entry.attrib[ET.QName(NS_XSI, "nil")] = "true"
-            elif target == "0" and mode in ("text", "nil"):
+
+            if target == "1":
+                el_entry.text = "1"        # <-- ALTID tekst "1"
+            else:
                 el_entry.text = "0"
-            elif target == "1" and mode == "text":
-                el_entry.text = "1"
+
 
         if groups_now:
             el_groups = ET.SubElement(ud, ET.QName(NS_USERDATA, "Groups"))
@@ -497,16 +497,17 @@ def set_entry_remaining(user_guid: str, target: str = "1") -> tuple[bool, str | 
             nil = (er is not None and er.attrib.get(f"{{{NS['i']}}}nil", "").lower() == "true")
             txt = (er.text or "").strip() if er is not None else ""
             if target == "1":
-                return nil or (er is None) or (txt == "1")
+                return (txt == "1")
             else:
                 return (txt == "0")
         except Exception:
             return False
 
-    # Phase A: nil (for target == "1") eller text "0" (for target == "0")
-    phaseA = ("nil" if target == "1" else "text")
+    # Phase A: altid skriv tal som tekst (1 eller 0) — aldrig nil
+    phaseA = "text"
     ok, _ = _build_and_put(phaseA); time.sleep(0.4)
     if _verify(): return True, None
+
 
     # Phase B: text "1" (kun hvis target == "1")
     if target == "1":

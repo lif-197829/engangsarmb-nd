@@ -196,12 +196,16 @@ def main():
 
     # to_update: EntryRemaining == "0" for current members, excluding anything slated for delete
     to_delete_set = set(to_delete)
+    def needs_reset(entry: str) -> bool:
+        e = (entry or "").strip()
+        return e != "1"  # reset alt der ikke er præcis "1" (0, -1, tom)
+
     to_update = sorted({
         data["UserID"]
         for _, data in group_by_card.items()
         if data.get("UserID")
         and data["UserID"] not in to_delete_set
-        and (data.get("EntryRemaining") or "").strip() == "0"
+        and needs_reset(data.get("EntryRemaining", ""))
     })
 
     # Write JSON outputs

@@ -7,7 +7,6 @@ from google.cloud import storage
 # --- IMPORTER DINE EKSISTERENDE SCRIPTS ---
 # Bemærk: Vi bruger navnet med underscores her
 import rasmus_liste_til_csv  
-import find_users
 import build_members_csv
 import member_rasmus_diff
 import create_missing_users
@@ -69,10 +68,6 @@ def entry_point(request):
         print("\n--- Kører: rasmus_liste_til_csv ---")
         rasmus_liste_til_csv.main()
 
-        # B. Hent alle ACCT brugere
-        print("\n--- Kører: find_users ---")
-        find_users.main()
-
         # C. Hent nuværende gruppemedlemmer
         print("\n--- Kører: build_members_csv ---")
         build_members_csv.main()
@@ -87,7 +82,6 @@ def entry_point(request):
         print("\n--- Kører: create_missing_users ---")
         run_script_with_args(create_missing_users, [
             "rasmus-liste.csv", 
-            "all_users.csv", 
             "--card-col", "Card"
         ])
 
