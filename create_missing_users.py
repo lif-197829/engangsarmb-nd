@@ -11,6 +11,7 @@ import json
 # Sørg for at utils kan findes
 sys.path.append(str(Path(__file__).resolve().parent))
 from utils.xml_utils import sort_children_alphabetically
+from utils.sync_log import SyncLog
 
 # --- ACCT config ---
 ACCT_BASE = os.getenv("ACCT_BASE", "https://test.acct.dk/rest/current").rstrip("/")
@@ -149,7 +150,7 @@ def read_cards_from_rasmus(path: str, card_col="Card", name_col="Name", pid_col=
 def build_userdata_xml(card: str, name: str, pid: str | None, group_id: str) -> bytes:
     """
     Bygger <UserData> XML som serveren forventer.
-    EntryRemaining sættes til i:nil="true" (typisk ønsket).
+    EntryRemaining saettes til 1 (en enkelt adgang).
     """
     root = ET.Element(ET.QName(NS_MAIN, "UserData"))
 
@@ -239,8 +240,10 @@ def main():
 
     if args.dry_run:
         Path("to_create_cards.json").write_text(json.dumps(to_create, indent=2, ensure_ascii=False), encoding="utf-8")
-        print("📝 Dry-run: gemt liste i to_create_cards.json")
+        print("Dry-run: gemt liste i to_create_cards.json")
         return
+
+    log = SyncLog()
 
     ok = 0
     conflicts = 0
@@ -252,24 +255,28 @@ def main():
         success, info = create_user(card, name, pid)
         if success:
             ok += 1
-            print(f"✅ Oprettet bruger – Card {card} (Name: {name or card})")
+            log.log("CREATE", card, f"Bruger oprettet (Name: {name or card})")
+            print(f"Oprettet bruger – Card {card} (Name: {name or card})")
         else:
             if info == "already_exists":
                 conflicts += 1
-                print(f"• Springes over – Card {card} findes allerede (409)")
+                print(f"Springes over – Card {card} findes allerede (409)")
             else:
                 errs.append({"card": card, "error": info})
-                print(f"❌ Fejl for Card {card}: {info}")
+                log.log("CREATE_FEJL", card, f"Fejl: {info}")
+                print(f"Fejl for Card {card}: {info}")
 
     print("\n--- Resultat ---")
     print(f"Oprettet: {ok}  | Allerede fandtes (409): {conflicts}  | Fejl: {len(errs)}")
 
     if errs:
         Path("create_user_errors.json").write_text(json.dumps(errs, indent=2, ensure_ascii=False), encoding="utf-8")
-        print("📝 Fejl gemt i create_user_errors.json")
+        print("Fejl gemt i create_user_errors.json")
+
+    log.flush()
 
     # Tip: efter oprettelser, kør diff-script igen så to_add kan mappes til UserIDs
-    print("\n➡️  Kør nu member_rasmus_diff.py igen for at få to_add.json udfyldt via API.")
+    print("\nKør nu member_rasmus_diff.py igen for at få to_add.json udfyldt via API.")
 
 
 if __name__ == "__main__":

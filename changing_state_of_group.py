@@ -7,6 +7,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import xml.etree.ElementTree as ET
 from utils.xml_utils import sort_children_alphabetically
+from utils.sync_log import SyncLog
 
 NS_USERDATA = "http://schemas.datacontract.org/2004/07/AcctPublicRestCommunicationLibrary"
 NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
@@ -520,8 +521,40 @@ def set_entry_remaining(user_guid: str, target: str = "1") -> tuple[bool, str | 
 
     return False, "persist_failed"
 
+# ---------- helpers ----------
+def _build_uid_to_card_map() -> dict[str, str]:
+    """Byg UserID -> Card mapping fra group_members.csv (hvis den findes)."""
+    mapping = {}
+    p = Path("group_members.csv")
+    if not p.exists():
+        return mapping
+    with p.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            uid = (row.get("UserID") or "").strip()
+            card = (row.get("Card") or "").strip()
+            if uid and card:
+                mapping[uid] = card
+    return mapping
+
+def _resolve_card(uid: str, uid_card_map: dict[str, str]) -> str:
+    """Slaa Card op for et UserID — brug CSV-map, ellers API-kald."""
+    card = uid_card_map.get(uid)
+    if card:
+        return card
+    try:
+        card, _ = _get_card_name(uid)
+        if card:
+            uid_card_map[uid] = card
+            return card
+    except Exception:
+        pass
+    return uid  # fallback: brug GUID som identifikator
+
 # ---------- main ----------
 def main():
+    log = SyncLog()
+
     # standardfilnavne (kan overrides via args)
     to_add_path     = Path("to_add.json")
     to_delete_path  = Path("to_delete.json")
@@ -544,25 +577,31 @@ def main():
     print(f"Indlæst {len(to_delete_ids)} GUIDs fra {to_delete_path.name} (to_delete)")
     print(f"Indlæst {len(to_update_ids)} GUIDs fra {to_update_path.name} (to_update)")
 
+    uid_card_map = _build_uid_to_card_map()
+
     # ADD
     add_ok = add_already = 0
     add_errs = []
     for uid in to_add_ids:
+        card = _resolve_card(uid, uid_card_map)
         ok, info = add_user_to_group(uid)
         if ok and info == "already_in_group":
             add_already += 1
             print(f"ADD {uid}: allerede i gruppen (409)")
         elif ok:
             add_ok += 1
+            log.log("ADD", card, f"Tilfojet til gruppe")
             print(f"ADD {uid}: tilføjet")
         else:
             add_errs.append({"user_id": uid, "error": info})
+            log.log("ADD_FEJL", card, f"Fejl: {info}")
             print(f"ADD {uid}: fejl – {info}")
 
     # DELETE (afmelding fra gruppen eller fuld sletning)
     del_ok = del_already = 0
     del_errs = []
     for uid in to_delete_ids:
+        card = _resolve_card(uid, uid_card_map)
         if DELETE_STRATEGY == "group_only":
             ok, info = remove_user_from_group(uid)
         else:
@@ -572,23 +611,27 @@ def main():
             print(f"DEL {uid}: {info.replace('_',' ')}")
         elif ok:
             del_ok += 1
-            # FIX: korrekt f-string i begge grene
+            log.log("DELETE", card, "Fjernet fra gruppe")
             print(f"DEL {uid}: fjernet fra gruppe" if DELETE_STRATEGY=="group_only" else f"DEL {uid}: bruger slettet")
         else:
             del_errs.append({"user_id": uid, "error": info})
+            log.log("DEL_FEJL", card, f"Fejl: {info}")
             print(f"DEL {uid}: fejl – {info}")
 
-    # UPDATE entryRemaining -> -1 (nil=true)
+    # UPDATE entryRemaining -> 1
     upd_ok = upd_err = 0
     upd_errs = []
     for uid in to_update_ids:
+        card = _resolve_card(uid, uid_card_map)
         ok, info = set_entry_remaining(uid, "1")
         if ok:
             upd_ok += 1
+            log.log("UPDATE", card, "EntryRemaining sat til 1")
             print(f"UPD {uid}: entryRemaining sat til 1")
         else:
             upd_err += 1
             upd_errs.append({"user_id": uid, "error": info})
+            log.log("UPD_FEJL", card, f"Fejl: {info}")
             print(f"UPD {uid}: fejl – {info}")
 
     print("\n--- Resultat ---")
@@ -605,6 +648,8 @@ def main():
     if upd_errs:
         Path("update_errors.json").write_text(json.dumps(upd_errs, indent=2, ensure_ascii=False), encoding="utf-8")
         print("UPD-fejl gemt i update_errors.json")
+
+    log.flush()
 
 if __name__ == "__main__":
     main()
