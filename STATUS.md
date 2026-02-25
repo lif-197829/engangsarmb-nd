@@ -199,6 +199,12 @@ Funktionen der stripper XML-namespace fra tag-navne er defineret som:
 
 `run_sync` antages kun brugt til lokal udvikling. Det kalder stadig `find_users.py` og sender forkerte argumenter til `create_missing_users.py`. Opdater det eller marker det som deprecated.
 
+### Oprydning i repo'et
+
+- **`readme.md`** — Indholdet starter med `cat > README.md << 'EOF'` (en shell-kommando gemt som filindhold ved en fejl). Resten er forældet. Slet filen og erstat med en ordentlig `README.md` der peger på `STATUS.md` for detaljer.
+- **`TODO.md`** — Erstattet af `STATUS.md`. Slet den.
+- **Datafiler i working dir** — `all_users.csv`, `group_members.csv`, `rasmus-liste.csv` og diverse JSON-filer ligger lokalt. De er korrekt ignoreret af `.gitignore`, men kan forvirre. De er genereret af pipeline'en og kan trygt slettes lokalt.
+
 ---
 
 ## Prioriteret opgaveliste
@@ -216,6 +222,7 @@ Funktionen der stripper XML-namespace fra tag-navne er defineret som:
 | 9 | Fjern emojis fra kodekommentarer og print-statements | Lav | Lav | Kodekvalitet |
 | 10 | Fjern `.env` og datafiler fra git | Lav | Lav | Kodekvalitet |
 | 11 | Opdater eller deprecer `run_sync` | Lav | Lav | Kodekvalitet |
+| 12 | Slet `readme.md` og `TODO.md`, lav en ny `README.md` | Lav | Lav | Oprydning |
 
 **Allerede done:**
 - ~~Implementer Google Drive logging~~ → `utils/sync_log.py`
