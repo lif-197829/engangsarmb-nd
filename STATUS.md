@@ -70,7 +70,9 @@ Se `.env.example` for alle env vars. De vigtigste:
 | `ACCT_PASS` | REST API password | Ja |
 | `GROUP_ID` | GUID for gruppen der synkroniseres | Ja |
 | `LOG_SHEET_ID` | Google Sheet ID til logning | Nej — uden den printes log til stdout |
-| `ENV_NAME` | `"indgang"` eller `"udgang"` — bruges i loggen | Nej — default `"ukendt"` |
+| `ENV_NAME` | `"indgang"` eller `"udgang"` — bruges i log og email | Nej — default `"ukendt"` |
+| `REPORT_EMAIL` | Modtager-email for rapport (`anders@event.it`) | Nej — uden den sendes ingen email |
+| `GMAIL_SENDER` / `SENDGRID_*` | Afsender-opsætning (se email-plan nedenfor) | Nej |
 
 For at logningen virker i produktion:
 1. Opret et Google Sheet i samme Drive som Rasmus' ark
@@ -83,6 +85,115 @@ For at logningen virker i produktion:
 ## Hvad der allerede er lavet
 
 - Google Drive logging: `utils/sync_log.py` er implementeret og integreret i `changing_state_of_group.py` og `create_missing_users.py`. Logger CREATE, ADD, UPDATE, DELETE (og fejl) med Card-nummer, miljønavn og tidsstempel til et Google Sheet med månedlige faneblade.
+
+---
+
+## Plan: Email-rapport efter hver kørsel
+
+Hver nat køres scriptet 2 gange (indgang + udgang). Efter hver kørsel skal der sendes en email til `anders@event.it` med en opsummering af hvad der skete.
+
+### Design
+
+**Ny fil: `utils/email_report.py`** — en funktion der tager `SyncLog`'s entries og sender en email.
+
+`SyncLog` buffer allerede alle entries i `self._entries`. Tilføj en metode `get_entries()` der returnerer dem, så `email_report` kan formatere dem til en email uden at duplikere data.
+
+### Email-indhold
+
+```
+Emne: Sync-rapport [indgang] — 2026-02-25 02:00
+
+Synkronisering afsluttet for: indgang
+Tidspunkt: 2026-02-25 02:00:03
+
+Opsummering:
+  Oprettet:    3
+  Tilføjet:    5
+  Opdateret:  42
+  Fjernet:     1
+  Fejl:        0
+
+Detaljer:
+  CREATE  12345  Bruger oprettet (Name: Hansen)
+  ADD     12345  Tilføjet til gruppe
+  UPDATE  67890  EntryRemaining sat til 1
+  ...
+
+---
+Sendt fra Engangsarmbånd Sync (Google Cloud Function)
+```
+
+Ved fejl skal emnelinjen indikere det: `Sync-rapport [indgang] — 2026-02-25 02:00 — 2 FEJL`
+
+### Teknisk tilgang
+
+GCF blokerer direkte SMTP (port 25/465/587), så vi har to muligheder:
+
+**Mulighed 1: Gmail API (foretrukken hvis Google Workspace)**
+
+Hvis Cloud Function-kontoen kører under Google Workspace (firma-domæne), kan service accounten sende email direkte via Gmail API. Kræver:
+- En admin aktiverer domain-wide delegation for service accounten
+- Service accounten impersonater en bruger med mailboks (f.eks. `noreply@domænet`)
+- Dependency: `google-api-python-client` (allerede i `requirements.txt`)
+
+Ingen ekstra konto eller tredjepart. Env vars:
+- `REPORT_EMAIL=anders@event.it` (modtager)
+- `GMAIL_SENDER=noreply@domænet` (afsender — Workspace-bruger)
+
+**Mulighed 2: SendGrid (fallback hvis ikke Workspace)**
+
+Hvis kontoen er en almindelig `@gmail.com`, kan service accounts ikke sende email. Brug i stedet SendGrid (gratis tier: 100 emails/dag). Env vars:
+- `SENDGRID_API_KEY` (API-nøgle fra SendGrid)
+- `REPORT_EMAIL=anders@event.it` (modtager)
+- `SENDGRID_FROM_EMAIL` (afsender — skal verificeres i SendGrid)
+
+**Afventer:** Adgang til Google Cloud-kontoen for at afgøre hvilken mulighed der bruges.
+
+### Design: `utils/email_report.py`
+
+Uanset mulighed, er interfacet det samme:
+
+```python
+def send_report(entries, env_name, error_count=0):
+    """Sender email-rapport med opsummering og detaljer."""
+```
+
+Email-indhold:
+```
+Emne: Sync-rapport [indgang] — 2026-02-25 02:00
+
+Synkronisering afsluttet for: indgang
+Tidspunkt: 2026-02-25 02:00:03
+
+Opsummering:
+  Oprettet:    3
+  Tilføjet:    5
+  Opdateret:  42
+  Fjernet:     1
+  Fejl:        0
+
+Detaljer:
+  CREATE  12345  Bruger oprettet (Name: Hansen)
+  ADD     12345  Tilføjet til gruppe
+  UPDATE  67890  EntryRemaining sat til 1
+  ...
+```
+
+Ved fejl indikerer emnelinjen det: `Sync-rapport [indgang] — 2026-02-25 02:00 — 2 FEJL`
+
+### Integration i `main.py`
+
+Kald `send_report()` lige før `return "Sync Success", 200` — og også i `except`-blokken så fejl-mails sendes selvom synk crasher.
+
+### Opgaver
+
+1. Få adgang til Google Cloud-kontoen og afgør Workspace vs. Gmail
+2. Sæt delegation/SendGrid op afhængigt af valg
+3. Implementer `utils/email_report.py`
+4. Tilføj `get_entries()` metode til `SyncLog`
+5. Integrer i `main.py` (succes + fejl)
+6. Tilføj env vars til Cloud Function
+7. Test
 
 ---
 
