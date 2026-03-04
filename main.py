@@ -93,7 +93,6 @@ def entry_point(request):
         # 3. UPLOAD LOGS TIL BUCKET
         files_to_save = [
             "rasmus-liste.csv",
-            "all_users.csv",
             "group_members.csv",
             "to_add.json",
             "to_delete.json",
