@@ -122,6 +122,22 @@ def lookup_userid_by_card(card: str, cache: dict[str, str]) -> str | None:
     return None
 
 
+def _load_existing_cards(csv_path: str) -> set[str]:
+    """Indlaes kort-numre fra group_members.csv (genereret af build_members_csv.py)."""
+    cards = set()
+    p = Path(csv_path)
+    if not p.exists():
+        print(f"Advarsel: {csv_path} ikke fundet — kan ikke filtrere eksisterende kort")
+        return cards
+    with p.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            card = (row.get("Card") or "").strip()
+            if card:
+                cards.add(card)
+    return cards
+
+
 def read_cards_from_rasmus(path: str, card_col="Card", name_col="Name", pid_col=None):
     """
     Returnerer dict: card -> {"name": <str or ''>, "pid": <str or ''>}
@@ -218,25 +234,23 @@ def main():
     if not GROUP_ID:
         raise RuntimeError("GROUP_ID mangler i env.")
 
-    cache = load_cache(CACHE_FILE)
-
     rasmus = read_cards_from_rasmus(args.rasmus_csv, args.card_col, args.name_col, args.pid_col)
 
-    # Find “mangler” via API (Card findes ikke => opret)
+    # Brug group_members.csv til at afgøre hvilke kort der allerede eksisterer
+    # (filen er genereret af build_members_csv.py i trin 2)
+    existing_cards = _load_existing_cards("group_members.csv")
+
     to_create: list[str] = []
     already_exists: list[str] = []
 
     for card in rasmus.keys():
-        uid = lookup_userid_by_card(card, cache)
-        if uid:
+        if card in existing_cards:
             already_exists.append(card)
         else:
             to_create.append(card)
 
-    print(f"🔎 Findes allerede i systemet (via API): {len(already_exists)}")
-    print(f"🆕 Mangler i systemet: {len(to_create)} kort (oprettes som brugere)")
-
-    save_cache(CACHE_FILE, cache)
+    print(f"Findes allerede i gruppen (via group_members.csv): {len(already_exists)}")
+    print(f"Mangler i systemet: {len(to_create)} kort (oprettes som brugere)")
 
     if args.dry_run:
         Path("to_create_cards.json").write_text(json.dumps(to_create, indent=2, ensure_ascii=False), encoding="utf-8")
