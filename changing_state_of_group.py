@@ -247,15 +247,6 @@ def add_user_to_group(user_guid: str) -> tuple[bool, str | None]:
     except requests.RequestException as e:
         return False, f"PUT failed: {e}"
 
-    # 5) Re-check membership (tåler eventual consistency)
-    try:
-        gg = requests.get(f"{ACCT_BASE}/users/{user_guid}/groups",
-                          auth=auth, headers={"Accept": "application/xml"}, timeout=15)
-        if gg.status_code == 200 and f"/groups/{GROUP_ID}" in (gg.text or ""):
-            return True, None
-    except requests.RequestException:
-        pass
-
     return True, None
 
 def delete_user(user_guid: str) -> tuple[bool, str | None]:
@@ -274,13 +265,6 @@ def delete_user(user_guid: str) -> tuple[bool, str | None]:
     except requests.HTTPError:
         return False, f"{r.status_code} {(r.text or '')[:200]}"
     return True, None
-
-def _write_debug_xml(path: str, content: bytes):
-    try:
-        from pathlib import Path
-        Path(path).write_text(content.decode("utf-8", errors="ignore"), encoding="utf-8")
-    except Exception:
-        pass
 
 def remove_user_from_group(user_guid: str) -> tuple[bool, str | None]:
     """
@@ -397,18 +381,12 @@ def remove_user_from_group(user_guid: str) -> tuple[bool, str | None]:
 
 def set_entry_remaining(user_guid: str, target: str = "1") -> tuple[bool, str | None]:
     """
-    Sæt EntryRemaining til '1' (unlimited) eller '0' (tekst "0").
-    Multi-phase fallback for at tvinge serveren til at persistere:
-      Phase A: nil=true
-      Phase B: text "1"
-      Phase C: helt uden <EntryRemaining/>
-    Returnerer False med forklaring hvis alt fejler.
+    Saet EntryRemaining til target ("1" eller "0").
+    Ét GET + ét PUT. Returnerer (ok, fejlbesked).
     """
-    import time
-
     url_user = f"{ACCT_BASE}/users/{user_guid}"
 
-    # 1) GET bruger (Card/Name)
+    # 1) GET bruger (Card/Name/Groups)
     try:
         g = requests.get(url_user, auth=auth, headers={"Accept": "application/xml"}, timeout=20)
         g.raise_for_status()
@@ -420,12 +398,9 @@ def set_entry_remaining(user_guid: str, target: str = "1") -> tuple[bool, str | 
     except ET.ParseError as e:
         return False, f"parse_error: {e}"
 
-    def lname(tag: str) -> str:
-        return tag.split("}", 1)[1].lower() if "}" in tag else tag.lower()
-
     cur_card = cur_name = ""
     for el in root_cur:
-        t = lname(el.tag)
+        t = _lname(el.tag)
         if t == "card": cur_card = (el.text or "").strip()
         elif t == "name": cur_name = (el.text or "").strip()
     if not cur_card: cur_card = user_guid
@@ -433,93 +408,45 @@ def set_entry_remaining(user_guid: str, target: str = "1") -> tuple[bool, str | 
 
     groups_now = _get_user_groups(user_guid)
 
-    def _build_and_put(mode: str) -> tuple[bool, str]:
-        """
-        mode:
-          "nil"  -> <EntryRemaining i:nil="true"/>
-          "text" -> <EntryRemaining>1</EntryRemaining> (eller "0")
-          "none" -> (intet EntryRemaining-element)
-        """
-        ud = ET.Element(ET.QName(NS_USERDATA, "UserData"))
-        ET.SubElement(ud, ET.QName(NS_USERDATA, "Card")).text = cur_card
+    # 2) Byg UserData med EntryRemaining = target
+    ud = ET.Element(ET.QName(NS_USERDATA, "UserData"))
+    ET.SubElement(ud, ET.QName(NS_USERDATA, "Card")).text = cur_card
+    ET.SubElement(ud, ET.QName(NS_USERDATA, "EntryRemaining")).text = target
 
-        # CardPin i:nil="true" hjælper nogle WCF set-ups
-        el_pin = ET.SubElement(ud, ET.QName(NS_USERDATA, "CardPin"))
-        el_pin.attrib[ET.QName(NS_XSI, "nil")] = "true"
+    if groups_now:
+        el_groups = ET.SubElement(ud, ET.QName(NS_USERDATA, "Groups"))
+        for gid in sorted(set(groups_now)):
+            ET.SubElement(el_groups, ET.QName(NS_ARR, "string")).text = gid
 
-        if mode != "none":
-            el_entry = ET.SubElement(ud, ET.QName(NS_USERDATA, "EntryRemaining"))
+    ET.SubElement(ud, ET.QName(NS_USERDATA, "Name")).text = cur_name
+    ET.SubElement(ud, ET.QName(NS_USERDATA, "UType")).text = "Normal"
 
-            if target == "1":
-                el_entry.text = "1"        # <-- ALTID tekst "1"
+    sort_children_alphabetically(ud)
+    put_xml = ET.tostring(ud, encoding="utf-8", xml_declaration=True)
+
+    # 3) PUT
+    try:
+        p = requests.put(
+            url_user, data=put_xml, auth=auth,
+            headers={"Content-Type": "application/xml; charset=utf-8", "Accept": "application/xml"},
+            timeout=20,
+        )
+        if p.status_code not in (200, 202, 204):
+            if p.status_code == 400:
+                put_xml_no_decl = ET.tostring(ud, encoding="utf-8", xml_declaration=False)
+                p2 = requests.put(
+                    url_user, data=put_xml_no_decl, auth=auth,
+                    headers={"Content-Type": "application/xml; charset=utf-8", "Accept": "application/xml"},
+                    timeout=20,
+                )
+                if p2.status_code not in (200, 202, 204):
+                    return False, f"{p2.status_code} {(p2.text or '')[:200]}"
             else:
-                el_entry.text = "0"
+                return False, f"{p.status_code} {(p.text or '')[:200]}"
+    except requests.RequestException as e:
+        return False, f"PUT failed: {e}"
 
-
-        if groups_now:
-            el_groups = ET.SubElement(ud, ET.QName(NS_USERDATA, "Groups"))
-            for gid in sorted(set(groups_now)):
-                ET.SubElement(el_groups, ET.QName(NS_ARR, "string")).text = gid
-
-        ET.SubElement(ud, ET.QName(NS_USERDATA, "Name")).text = cur_name
-        ET.SubElement(ud, ET.QName(NS_USERDATA, "UType")).text = "Normal"
-
-        sort_children_alphabetically(ud)
-        put_xml = ET.tostring(ud, encoding="utf-8", xml_declaration=True)
-        try:
-            p = requests.put(
-                url_user, data=put_xml, auth=auth,
-                headers={"Content-Type":"application/xml; charset=utf-8","Accept":"application/xml"},
-                timeout=20
-            )
-            if p.status_code not in (200,202,204):
-                if p.status_code == 400:
-                    put_xml2 = ET.tostring(ud, encoding="utf-8", xml_declaration=False)
-                    p2 = requests.put(
-                        url_user, data=put_xml2, auth=auth,
-                        headers={"Content-Type":"application/xml; charset=utf-8","Accept":"application/xml"},
-                        timeout=20
-                    )
-                    if p2.status_code not in (200,202,204):
-                        return False, f"{p2.status_code}"
-                else:
-                    return False, f"{p.status_code}"
-        except requests.RequestException as e:
-            return False, f"PUT failed: {e}"
-        return True, "ok"
-
-    def _verify() -> bool:
-        NS = {"n": NS_USERDATA, "i": NS_XSI}
-        try:
-            r = requests.get(url_user, auth=auth, headers={"Accept": "application/xml"}, timeout=15)
-            r.raise_for_status()
-            root = ET.fromstring(r.content)
-            er = root.find("n:EntryRemaining", NS)
-            nil = (er is not None and er.attrib.get(f"{{{NS['i']}}}nil", "").lower() == "true")
-            txt = (er.text or "").strip() if er is not None else ""
-            if target == "1":
-                return (txt == "1")
-            else:
-                return (txt == "0")
-        except Exception:
-            return False
-
-    # Phase A: altid skriv tal som tekst (1 eller 0) — aldrig nil
-    phaseA = "text"
-    ok, _ = _build_and_put(phaseA); time.sleep(0.4)
-    if _verify(): return True, None
-
-
-    # Phase B: text "1" (kun hvis target == "1")
-    if target == "1":
-        ok, _ = _build_and_put("text"); time.sleep(0.4)
-        if _verify(): return True, None
-
-        # Phase C: fjern elementet helt
-        ok, _ = _build_and_put("none"); time.sleep(0.4)
-        if _verify(): return True, None
-
-    return False, "persist_failed"
+    return True, None
 
 # ---------- helpers ----------
 def _build_uid_to_card_map() -> dict[str, str]:
@@ -550,6 +477,58 @@ def _resolve_card(uid: str, uid_card_map: dict[str, str]) -> str:
     except Exception:
         pass
     return uid  # fallback: brug GUID som identifikator
+
+def _verify_entry_remaining(updated_ids: list[str], uid_card_map: dict[str, str], log) -> list[dict]:
+    """
+    Henter alle gruppemedlemmer med ét GET-kald og tjekker at
+    EntryRemaining == "1" for alle brugere der netop er opdateret.
+    Returnerer liste af fejl (tom = alt OK).
+    """
+    url = f"{ACCT_BASE}/groups/{GROUP_ID}/users"
+    try:
+        r = requests.get(url, auth=auth, headers={"Accept": "application/xml"}, timeout=30)
+        r.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Verifikation: kunne ikke hente gruppemedlemmer: {e}")
+        return [{"error": f"GET failed: {e}"}]
+
+    # Parse alle brugere og deres EntryRemaining
+    NS = {"n": NS_USERDATA, "i": NS_XSI}
+    try:
+        root = ET.fromstring(r.content)
+    except ET.ParseError as e:
+        print(f"Verifikation: parse fejl: {e}")
+        return [{"error": f"parse_error: {e}"}]
+
+    member_entry = {}
+    for user_el in root.findall("n:User", NS):
+        uid_uri = (user_el.findtext("n:UserID", default="", namespaces=NS) or "").strip()
+        uid = uid_uri.rsplit("/", 1)[-1] if uid_uri else ""
+        if not uid:
+            continue
+        er_el = user_el.find("n:EntryRemaining", NS)
+        if er_el is None:
+            member_entry[uid] = ""
+        elif er_el.attrib.get(f"{{{NS_XSI}}}nil", "").lower() == "true":
+            member_entry[uid] = "nil"
+        else:
+            member_entry[uid] = (er_el.text or "").strip()
+
+    updated_set = set(updated_ids)
+    failures = []
+    for uid in updated_set:
+        actual = member_entry.get(uid)
+        if actual is None:
+            card = _resolve_card(uid, uid_card_map)
+            failures.append({"user_id": uid, "card": card, "issue": "ikke fundet i gruppen"})
+            log.log("VERIFY_FEJL", card, "Bruger ikke fundet i gruppen efter opdatering")
+        elif actual != "1":
+            card = _resolve_card(uid, uid_card_map)
+            failures.append({"user_id": uid, "card": card, "expected": "1", "actual": actual})
+            log.log("VERIFY_FEJL", card, f"EntryRemaining={actual}, forventet 1")
+
+    return failures
+
 
 # ---------- main ----------
 def main():
@@ -648,6 +627,18 @@ def main():
     if upd_errs:
         Path("update_errors.json").write_text(json.dumps(upd_errs, indent=2, ensure_ascii=False), encoding="utf-8")
         print("UPD-fejl gemt i update_errors.json")
+
+    # Samlet verifikation: hent alle gruppemedlemmer og tjek EntryRemaining
+    if to_update_ids:
+        print("\n--- Verifikation ---")
+        verify_failures = _verify_entry_remaining(to_update_ids, uid_card_map, log)
+        if verify_failures:
+            Path("verify_errors.json").write_text(
+                json.dumps(verify_failures, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
+            print(f"ADVARSEL: {len(verify_failures)} brugere har stadig forkert EntryRemaining — se verify_errors.json")
+        else:
+            print(f"Verifikation OK: alle {len(to_update_ids)} opdaterede brugere har EntryRemaining=1")
 
     log.flush()
 
