@@ -87,11 +87,7 @@ py_run() {
 info "1) Henter rasmus-liste.csv"
 py_run "rasmus-liste-til_csv" 3 rasmus-liste-til_csv.py
 
-# 2) Eksporter alle ACCT-brugere (→ all_users.csv)
-info "2) Henter all_users.csv"
-py_run "find_users" 3 find_users.py
-
-# 3) Eksporter gruppemedlemmer (→ group_members.csv)
+# 2) Eksporter gruppemedlemmer (→ group_members.csv)
 info "3) Henter group_members.csv"
 py_run "build_members_csv" 3 build_members_csv.py
 
@@ -114,10 +110,9 @@ if $CREATE_MISSING; then
       info "Tørkørsel: ville oprette manglende brugere (${MISS_COUNT})"
     else 
       info "5) Opretter manglende brugere"
-      py_run "create_missing_users" 2 create_missing_users.py rasmus-liste.csv all_users.csv --card-col "Card" --name-col "Name"
+      py_run "create_missing_users" 2 create_missing_users.py rasmus-liste.csv --card-col "Card" --name-col "Name"
 
       info "Opfrisker lister/diff efter oprettelser"
-      py_run "find_users" 3 find_users.py
       py_run "build_members_csv" 3 build_members_csv.py
       py_run "member_rasmus_diff" 1 member_rasmus_diff.py
     fi
@@ -159,7 +154,6 @@ cp -f to_add.json        "$log_dir/to_add_$ts.json"        2>/dev/null || true
 cp -f to_delete.json     "$log_dir/to_delete_$ts.json"     2>/dev/null || true
 cp -f to_update.json     "$log_dir/to_update_$ts.json"     2>/dev/null || true
 cp -f missing_cards.json "$log_dir/missing_cards_$ts.json" 2>/dev/null || true
-cp -f all_users.csv      "$log_dir/all_users_$ts.csv"      2>/dev/null || true
 cp -f group_members.csv  "$log_dir/group_members_$ts.csv"  2>/dev/null || true
 cp -f rasmus-liste.csv   "$log_dir/rasmus-liste_$ts.csv"   2>/dev/null || true
 
